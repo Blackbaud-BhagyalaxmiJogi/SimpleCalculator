@@ -1,15 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Text;
 
 namespace SimpleCalculator
 {
-    // This class takes an expression
-    // convert that infix to postfix expression
-    // evaluate the postfix expression
-    // result is loged and printed on console
+    // Tokenize the raw string into numbers, operators, and parentheses.
+    // Convert the infix token list into postfix (RPN) order.
+    // Evaluate the postfix expression to a single numeric result.
     static class ExpressionCalculator
     {
         // Special token representing unary negation (distinct from binary subtraction, which uses the same '-' character in the input).
@@ -18,7 +13,7 @@ namespace SimpleCalculator
         private const string OpenParen = "(";
         private const string CloseParen = ")";
 
-        // Arthematic Operators
+        // Arithmetic Operators
         private const string BinaryOperatorChars = "+-*/%^";
 
         // To store Operators Precedence
@@ -41,7 +36,6 @@ namespace SimpleCalculator
             return EvaluatePostfix(postfixTokens);
         }
 
-        // Step 1: Tokenizing
 
         private static List<string> Tokenize(string expression)
         {
@@ -101,8 +95,6 @@ namespace SimpleCalculator
         }
 
  
-        // Step 2: Infix -> Postfix (Shunting-Yard Algorithm)
-
         private static Queue<string> ConvertToPostfix(List<string> tokens)
         {
             Queue<string> outputQueue = new Queue<string>();
@@ -183,8 +175,6 @@ namespace SimpleCalculator
                 outputQueue.Enqueue(operatorStack.Pop());
             }
         }
-
-        // Step 3: Evaluating the Postfix Expression
 
 
         private static double EvaluatePostfix(Queue<string> postfixTokens)

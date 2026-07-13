@@ -1,11 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
+﻿
 namespace SimpleCalculator
 {
+    // Small helper around Console output so color-printing logic isn't duplicated
+    // across every method that needs to show a success or error message.
     static class ConsoleHelper
     {
         public static void WriteSuccess(string message) => WriteColored(message, ConsoleColor.Green);

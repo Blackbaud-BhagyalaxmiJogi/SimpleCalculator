@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
+﻿
 
 namespace SimpleCalculator
 {
@@ -71,8 +68,6 @@ namespace SimpleCalculator
             Console.Write("Choice: ");
         }
 
-        
-        // Evaluate a single expression typed at the console
 
         private static void EvaluateExpressionFromConsole()
         {
@@ -81,18 +76,18 @@ namespace SimpleCalculator
             Console.Write("> ");
             string input = Console.ReadLine();
 
-            if (TryEvaluateAndLog(input, out double result, out _, out string errorMessage))
+            EvaluationOutcome outcome = TryEvaluateAndLog(input);
+
+            if (outcome.Success)
             {
-                ConsoleHelper.WriteSuccess($"\nResult: {result}");
+                ConsoleHelper.WriteSuccess($"\nResult: {outcome.Result}");
             }
             else
             {
-                ConsoleHelper.WriteError($"Syntax/Math Error: {errorMessage}");
+                ConsoleHelper.WriteError($"Syntax/Math Error: {outcome.ErrorMessage}");
             }
         }
 
-
-        //Evaluate every expression found in a text file
 
         private static void EvaluateExpressionsFromFile()
         {
@@ -120,8 +115,9 @@ namespace SimpleCalculator
 
         private static void ProcessExpressionLines(string[] lines)
         {
+            int separatedWidth = 40;
             Console.WriteLine($"\nFound {lines.Length} lines. Processing...\n");
-            Console.WriteLine(new string('-', 40));
+            Console.WriteLine(new String('-',separatedWidth));
 
             int lineNumber = 1;
             foreach (string line in lines)
@@ -134,44 +130,50 @@ namespace SimpleCalculator
                 lineNumber++;
             }
 
-            Console.WriteLine(new string('-', 40));
+            Console.WriteLine(new String('-', separatedWidth));
             Console.WriteLine("Batch processing complete.");
         }
 
         private static void ProcessSingleExpressionLine(string line, int lineNumber)
         {
-            if (TryEvaluateAndLog(line, out _, out string entry, out string errorMessage))
+            EvaluationOutcome outcome = TryEvaluateAndLog(line);
+
+            if (outcome.Success)
             {
-                ConsoleHelper.WriteSuccess($"[{lineNumber}] SUCCESS: {entry}");
+                ConsoleHelper.WriteSuccess($"[{lineNumber}] SUCCESS: {outcome.Entry}");
             }
             else
             {
-                ConsoleHelper.WriteError($"[{lineNumber}] ERROR on expression '{line.Trim()}': {errorMessage}");
+                ConsoleHelper.WriteError($"[{lineNumber}] ERROR on expression '{line.Trim()}': {outcome.ErrorMessage}");
             }
         }
 
-        // ---------------------------------------------------------------
-        // Shared: evaluate one expression, log it, and report the outcome
-        // ---------------------------------------------------------------
 
-        private static bool TryEvaluateAndLog(string expression, out double result, out string entry, out string errorMessage)
+
+        private static EvaluationOutcome TryEvaluateAndLog(string expression)
         {
-            result = 0;
-            entry = null;
-            errorMessage = null;
             string trimmedExpression = expression.Trim();
 
             try
             {
-                result = ExpressionCalculator.Evaluate(trimmedExpression);
-                entry = $"{trimmedExpression} = {result}";
+                double result = ExpressionCalculator.Evaluate(trimmedExpression);
+                string entry = $"{trimmedExpression} = {result}";
                 HistoryLogger.Log(entry);
-                return true;
+                return EvaluationOutcome.Succeeded(result, entry);
             }
-            catch (Exception ex)
+            catch (FormatException ex)
             {
-                errorMessage = ex.Message;
-                return false;
+                // bad syntax: mismatched parentheses, malformed structure, etc.
+                return EvaluationOutcome.Failed(ex.Message);
+            }
+            catch (DivideByZeroException ex)
+            {
+                return EvaluationOutcome.Failed(ex.Message);
+            }
+            catch (IOException ex)
+            {
+                // Thrown by HistoryLogger if the log file can't be written to.
+                return EvaluationOutcome.Failed($"Logging error: {ex.Message}");
             }
         }
     }
