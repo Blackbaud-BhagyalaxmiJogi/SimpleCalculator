@@ -3,55 +3,64 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
-namespace AdvancedExpressionCalculator
+namespace SimpleCalculator
 {
     class Program
     {
-        private static readonly string logFilePath = "expression_history.txt";
-        private static List<string> calculationHistory = new List<string>();
+        private const string MenuEvaluateManually = "1";
+        private const string MenuEvaluateFromFile = "2";
+        private const string MenuShowHistory = "3";
+        private const string MenuClearHistory = "4";
+        private const string MenuExit = "5";
 
         static void Main(string[] args)
         {
-            bool Running = true;
-            Console.WriteLine("==================================================");
+            Console.WriteLine("--------------------------------------------------");
             Console.WriteLine("            Welcome to the Calculator             ");
-            Console.WriteLine("==================================================");
+            Console.WriteLine("--------------------------------------------------");
 
-            while (Running)
+            RunMenuLoop();
+
+            Console.WriteLine("\nGoodbye!");
+        }
+
+        private static void RunMenuLoop()
+        {
+            bool isRunning = true;
+
+            while (isRunning)
             {
                 DisplayMenu();
                 string choice = Console.ReadLine();
-
-                switch (choice)
-                {
-                    case "1":
-                        EvaluateExpressionFlow();
-                        break;
-                    case "2":
-                        ProcessExpressionsFromFile();
-                        break;
-                    case "3":
-                        ShowHistory();
-                        break;
-                    case "4":
-                        ClearHistory();
-                        break;
-                    case "5":
-                        Running = false;
-                        Console.WriteLine("\nGoodbye!");
-                        break;
-                    default:
-                        Console.ForegroundColor = ConsoleColor.Red;
-                        Console.WriteLine("Invalid selection.");
-                        Console.ResetColor();
-                        break;
-                }
-
-         
+                isRunning = HandleMenuChoice(choice);
             }
         }
 
-        static void DisplayMenu()
+        private static bool HandleMenuChoice(string choice)
+        {
+            switch (choice)
+            {
+                case MenuEvaluateManually:
+                    EvaluateExpressionFromConsole();
+                    return true;
+                case MenuEvaluateFromFile:
+                    EvaluateExpressionsFromFile();
+                    return true;
+                case MenuShowHistory:
+                    HistoryLogger.ShowHistory();
+                    return true;
+                case MenuClearHistory:
+                    HistoryLogger.ClearHistory();
+                    return true;
+                case MenuExit:
+                    return false;
+                default:
+                    ConsoleHelper.WriteError("Invalid selection.");
+                    return true;
+            }
+        }
+
+        private static void DisplayMenu()
         {
             Console.WriteLine("\nMAIN MENU:");
             Console.WriteLine("1. Enter an Expression Manually");
@@ -62,86 +71,46 @@ namespace AdvancedExpressionCalculator
             Console.Write("Choice: ");
         }
 
-        static void EvaluateExpressionFlow()
+        
+        // Evaluate a single expression typed at the console
+
+        private static void EvaluateExpressionFromConsole()
         {
             Console.Clear();
             Console.WriteLine("Enter your full expression (e.g., 6+5*(4-2.6)/80%3^2):");
             Console.Write("> ");
             string input = Console.ReadLine();
 
-            try
+            if (TryEvaluateAndLog(input, out double result, out _, out string errorMessage))
             {
-                double result = Evaluate(input);
-                string entry = $"{input} = {result}";
-
-                Console.ForegroundColor = ConsoleColor.Green;
-                Console.WriteLine($"\nResult: {result}");
-                Console.ResetColor();
-
-                LogResult(entry);
+                ConsoleHelper.WriteSuccess($"\nResult: {result}");
             }
-            catch (Exception ex)
+            else
             {
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine($"Syntax/Math Error: {ex.Message}");
-                Console.ResetColor();
+                ConsoleHelper.WriteError($"Syntax/Math Error: {errorMessage}");
             }
         }
 
 
-        ///  This method Reads expressions from an external text file, processes them, and logs the final output.
+        //Evaluate every expression found in a text file
 
-        static void ProcessExpressionsFromFile()
+        private static void EvaluateExpressionsFromFile()
         {
             Console.Clear();
-            Console.WriteLine("--- Process Expressions From File ---");
+            Console.WriteLine("Process Expressions From File");
             Console.Write("Enter the path to your .txt file (or filename if in the same folder): ");
             string inputFilePath = Console.ReadLine();
 
-            
             if (!File.Exists(inputFilePath))
             {
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine("Error: File not found. Make sure the filename/path is correct.");
-                Console.ResetColor();
+                ConsoleHelper.WriteError("Error: File not found. Make sure the filename/path is correct.");
                 return;
             }
 
             try
             {
-                // File Handling: Read all lines from the source file
                 string[] lines = File.ReadAllLines(inputFilePath);
-                Console.WriteLine($"\nFound {lines.Length} lines. Processing...\n");
-                Console.WriteLine(new string('-', 40));
-
-                int count = 1;
-                foreach (string line in lines)
-                {
-                    // Skip empty lines or whitespace strings
-                    if (string.IsNullOrWhiteSpace(line)) continue;
-
-                    try
-                    {
-                        double result = Evaluate(line);
-                        string entry = $"{line.Trim()} = {result}";
-
-                        Console.ForegroundColor = ConsoleColor.Green;
-                        Console.WriteLine($"[{count}] SUCCESS: {entry}");
-                        Console.ResetColor();
-
-                        LogResult(entry);
-                    }
-                    catch (Exception ex)
-                    {
-                        // Catch bad syntax on specific lines without crashing the entire loop
-                        Console.ForegroundColor = ConsoleColor.Red;
-                        Console.WriteLine($"[{count}] ERROR on expression '{line.Trim()}': {ex.Message}");
-                        Console.ResetColor();
-                    }
-                    count++;
-                }
-                Console.WriteLine(new string('-', 40));
-                Console.WriteLine("Batch processing complete.");
+                ProcessExpressionLines(lines);
             }
             catch (IOException ex)
             {
@@ -149,162 +118,61 @@ namespace AdvancedExpressionCalculator
             }
         }
 
-        static void LogResult(string entry)
+        private static void ProcessExpressionLines(string[] lines)
         {
-            // Collections
-            calculationHistory.Add(entry);
-            // File Handling
-            File.AppendAllText(logFilePath, $"[{DateTime.Now}] {entry}\n");
+            Console.WriteLine($"\nFound {lines.Length} lines. Processing...\n");
+            Console.WriteLine(new string('-', 40));
+
+            int lineNumber = 1;
+            foreach (string line in lines)
+            {
+                if (!string.IsNullOrWhiteSpace(line))
+                {
+                    ProcessSingleExpressionLine(line, lineNumber);
+                }
+
+                lineNumber++;
+            }
+
+            Console.WriteLine(new string('-', 40));
+            Console.WriteLine("Batch processing complete.");
         }
 
-        // SHUNTING-YARD ALGORITHM PARSER 
-        public static double Evaluate(string expression)
+        private static void ProcessSingleExpressionLine(string line, int lineNumber)
         {
-            expression = expression.Replace(" ", "");
-            List<string> tokens = Tokenize(expression);
-            Queue<string> outputQueue = new Queue<string>();
-            Stack<string> operatorStack = new Stack<string>();
-
-            Dictionary<string, int> precedence = new Dictionary<string, int>()
+            if (TryEvaluateAndLog(line, out _, out string entry, out string errorMessage))
             {
-                {"#", 4}, {"^", 3}, {"*", 2}, {"/", 2}, {"%", 2}, {"+", 1}, {"-", 1}
-            };
-
-            for (int i = 0; i < tokens.Count; i++)
-            {
-                string token = tokens[i];
-
-                if (double.TryParse(token, out _))
-                {
-                    outputQueue.Enqueue(token);
-                }
-                else if (token == "(")
-                {
-                    operatorStack.Push(token);
-                }
-                else if (token == ")")
-                {
-                    while (operatorStack.Count > 0 && operatorStack.Peek() != "(")
-                    {
-                        outputQueue.Enqueue(operatorStack.Pop());
-                    }
-                    if (operatorStack.Count == 0) throw new Exception("Mismatched parentheses.");
-                    operatorStack.Pop(); 
-                }
-                else 
-                {
-                    while (operatorStack.Count > 0 && operatorStack.Peek() != "(" &&
-                           (precedence[operatorStack.Peek()] > precedence[token] ||
-                           (precedence[operatorStack.Peek()] == precedence[token] && token != "^")))
-                    {
-                        outputQueue.Enqueue(operatorStack.Pop());
-                    }
-                    operatorStack.Push(token);
-                }
+                ConsoleHelper.WriteSuccess($"[{lineNumber}] SUCCESS: {entry}");
             }
-
-            while (operatorStack.Count > 0)
+            else
             {
-                if (operatorStack.Peek() == "(") throw new Exception("Mismatched parentheses.");
-                outputQueue.Enqueue(operatorStack.Pop());
+                ConsoleHelper.WriteError($"[{lineNumber}] ERROR on expression '{line.Trim()}': {errorMessage}");
             }
-
-            Stack<double> evalStack = new Stack<double>();
-
-            while (outputQueue.Count > 0)
-            {
-                string token = outputQueue.Dequeue();
-
-                if (double.TryParse(token, out double number))
-                {
-                    evalStack.Push(number);
-                }
-                else
-                {
-                    if (token == "#") 
-                    {
-                        if (evalStack.Count < 1) throw new Exception("Invalid expression structure.");
-                        evalStack.Push(-evalStack.Pop());
-                        continue;
-                    }
-
-                    if (evalStack.Count < 2) throw new Exception("Invalid expression structure.");
-                    double b = evalStack.Pop();
-                    double a = evalStack.Pop();
-
-                    switch (token)
-                    {
-                        case "+": evalStack.Push(a + b); break;
-                        case "-": evalStack.Push(a - b); break;
-                        case "*": evalStack.Push(a * b); break;
-                        case "/": 
-                            if (b == 0) throw new DivideByZeroException("Division by zero!");
-                            evalStack.Push(a / b); 
-                            break;
-                        case "%": 
-                            if (b == 0) throw new DivideByZeroException("Modulo by zero!");
-                            evalStack.Push(a % b); 
-                            break;
-                        case "^": evalStack.Push(Math.Pow(a, b)); break;
-                    }
-                }
-            }
-
-            if (evalStack.Count != 1) throw new Exception("Failed to evaluate expression.");
-            return evalStack.Pop();
         }
 
-        private static List<string> Tokenize(string expr)
-        {
-            List<string> tokens = new List<string>();
-            int i = 0;
+        // ---------------------------------------------------------------
+        // Shared: evaluate one expression, log it, and report the outcome
+        // ---------------------------------------------------------------
 
-            while (i < expr.Length)
+        private static bool TryEvaluateAndLog(string expression, out double result, out string entry, out string errorMessage)
+        {
+            result = 0;
+            entry = null;
+            errorMessage = null;
+            string trimmedExpression = expression.Trim();
+
+            try
             {
-                char c = expr[i];
-
-                if (char.IsDigit(c) || c == '.')
-                {
-                    StringBuilder sb = new StringBuilder();
-                    while (i < expr.Length && (char.IsDigit(expr[i]) || expr[i] == '.'))
-                    {
-                        sb.Append(expr[i]);
-                        i++;
-                    }
-                    tokens.Add(sb.ToString());
-                }
-                else
-                {
-                    if (c == '-' && (tokens.Count == 0 || tokens[tokens.Count - 1] == "(" || "+-*/%^".Contains(tokens[tokens.Count - 1])))
-                    {
-                        tokens.Add("#"); 
-                    }
-                    else
-                    {
-                        tokens.Add(c.ToString());
-                    }
-                    i++;
-                }
+                result = ExpressionCalculator.Evaluate(trimmedExpression);
+                entry = $"{trimmedExpression} = {result}";
+                HistoryLogger.Log(entry);
+                return true;
             }
-            return tokens;
-        }
-
-        static void ShowHistory()
-        {
-            Console.Clear();
-            if (File.Exists(logFilePath))
+            catch (Exception ex)
             {
-                string[] logs = File.ReadAllLines(logFilePath);
-                foreach (var log in logs) Console.WriteLine(log);
+                errorMessage = ex.Message;
+                return false;
             }
-            else Console.WriteLine("History empty.");
-        }
-
-        static void ClearHistory()
-        {
-            if (File.Exists(logFilePath)) File.Delete(logFilePath);
-            calculationHistory.Clear();
-            Console.WriteLine("History wiped cleanly.");
         }
     }
 }
