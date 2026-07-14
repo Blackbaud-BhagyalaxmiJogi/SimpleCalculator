@@ -1,5 +1,9 @@
 ﻿
 
+using SimpleCalculator.Calculation;
+using SimpleCalculator.Logging;
+using SimpleCalculator.UI;
+
 namespace SimpleCalculator
 {
     class Program
@@ -9,6 +13,12 @@ namespace SimpleCalculator
         private const string MenuShowHistory = "3";
         private const string MenuClearHistory = "4";
         private const string MenuExit = "5";
+
+
+        private const string LogFilePath = "expression_history.txt";
+
+        private static readonly ExpressionCalculator calculator = new ExpressionCalculator();
+        private static readonly HistoryLogger historyLogger = new HistoryLogger(LogFilePath);
 
         static void Main(string[] args)
         {
@@ -44,10 +54,10 @@ namespace SimpleCalculator
                     EvaluateExpressionsFromFile();
                     return true;
                 case MenuShowHistory:
-                    HistoryLogger.ShowHistory();
+                    historyLogger.ShowHistory();
                     return true;
                 case MenuClearHistory:
-                    HistoryLogger.ClearHistory();
+                    historyLogger.ClearHistory();
                     return true;
                 case MenuExit:
                     return false;
@@ -156,9 +166,9 @@ namespace SimpleCalculator
 
             try
             {
-                double result = ExpressionCalculator.Evaluate(trimmedExpression);
+                double result = calculator.Evaluate(trimmedExpression);
                 string entry = $"{trimmedExpression} = {result}";
-                HistoryLogger.Log(entry);
+                historyLogger.Log(entry);
                 return EvaluationOutcome.Succeeded(result, entry);
             }
             catch (FormatException ex)

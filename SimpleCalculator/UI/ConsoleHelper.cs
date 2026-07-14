@@ -1,5 +1,4 @@
-﻿
-namespace SimpleCalculator
+﻿namespace SimpleCalculator.UI
 {
     // Small helper around Console output so color-printing logic isn't duplicated
     // across every method that needs to show a success or error message.
