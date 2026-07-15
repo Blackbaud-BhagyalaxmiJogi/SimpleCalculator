@@ -1,34 +1,25 @@
-﻿using System.Text;
+﻿using SimpleCalculator.Operators;
+using System.Text;
 
-namespace SimpleCalculator
+namespace SimpleCalculator.Calculation
 {
     // Tokenize the raw string into numbers, operators, and parentheses.
     // Convert the infix token list into postfix (RPN) order.
     // Evaluate the postfix expression to a single numeric result.
-    static class ExpressionCalculator
+    public class ExpressionCalculator
     {
         // Special token representing unary negation (distinct from binary subtraction, which uses the same '-' character in the input).
-        // negation rather than subtraction (e.g. "3*-5", "(-5+2)", "-5+3").
+        // negation rather than subtraction.
         private const string UnaryMinusToken = "#";
         private const string OpenParen = "(";
         private const string CloseParen = ")";
 
         // Arithmetic Operators
-        private const string BinaryOperatorChars = "+-*/%^";
+        private static readonly string BinaryOperatorSymbols = OperatorFactory.GetBinaryOperatorSymbols();
 
-        // To store Operators Precedence
-        private static readonly Dictionary<string, int> OperatorPrecedence = new Dictionary<string, int>
-        {
-            { UnaryMinusToken, 4 },
-            { "^", 3 },
-            { "*", 2 },
-            { "/", 2 },
-            { "%", 2 },
-            { "+", 1 },
-            { "-", 1 }
-        };
 
-        public static double Evaluate(string expression)
+
+        public double Evaluate(string expression)
         {
             string cleanedExpression = expression.Replace(" ", "");
             List<string> tokens = Tokenize(cleanedExpression);
@@ -89,7 +80,7 @@ namespace SimpleCalculator
 
             bool isFirstToken = tokens.Count == 0;
             bool afterOpenParen = tokens.Count > 0 && tokens[tokens.Count - 1] == OpenParen;
-            bool afterAnotherOperator = tokens.Count > 0 && BinaryOperatorChars.Contains(tokens[tokens.Count - 1]);
+            bool afterAnotherOperator = tokens.Count > 0 && BinaryOperatorSymbols.Contains(tokens[tokens.Count - 1]);
 
             return isFirstToken || afterOpenParen || afterAnotherOperator;
         }
@@ -151,14 +142,14 @@ namespace SimpleCalculator
 
         private static bool HasPriorityOver(string stackToken, string incomingToken)
         {
-            int stackPrecedence = OperatorPrecedence[stackToken];
-            int incomingPrecedence = OperatorPrecedence[incomingToken];
+            Operator stackOperator = OperatorFactory.GetOperator(stackToken);
+            Operator incomingOperator = OperatorFactory.GetOperator(incomingToken);
 
-            bool isHigherPrecedence = stackPrecedence > incomingPrecedence;
+            bool isHigherPrecedence = stackOperator.Precedence > incomingOperator.Precedence;
 
             // '^' is right-associative, so equal-precedence '^' should NOT be popped (it stacks up for right-to-left evaluation).
             // Every other operator is left-associative.
-            bool isEqualPrecedenceAndLeftAssociative = stackPrecedence == incomingPrecedence && incomingToken != "^";
+            bool isEqualPrecedenceAndLeftAssociative = stackOperator.Precedence == incomingOperator.Precedence && !incomingOperator.IsRightAssociative;
 
             return isHigherPrecedence || isEqualPrecedenceAndLeftAssociative;
         }
@@ -189,13 +180,9 @@ namespace SimpleCalculator
                 {
                     evalStack.Push(number);
                 }
-                else if (token == UnaryMinusToken)
-                {
-                    ApplyUnaryMinus(evalStack);
-                }
                 else
                 {
-                    ApplyBinaryOperator(token, evalStack);
+                    ApplyOperator(OperatorFactory.GetOperator(token), evalStack);
                 }
             }
 
@@ -207,57 +194,20 @@ namespace SimpleCalculator
             return evalStack.Pop();
         }
 
-        private static void ApplyUnaryMinus(Stack<double> evalStack)
+        private static void ApplyOperator(Operator op, Stack<double> evalStack)
         {
-            if (evalStack.Count < 1)
+            if (evalStack.Count < op.OperandCount)
             {
                 throw new FormatException("Invalid expression structure.");
             }
 
-            evalStack.Push(-evalStack.Pop());
-        }
-
-        private static void ApplyBinaryOperator(string op, Stack<double> evalStack)
-        {
-            if (evalStack.Count < 2)
+            double[] operands = new double[op.OperandCount];
+            for (int i = op.OperandCount - 1; i >= 0; i--)
             {
-                throw new FormatException("Invalid expression structure.");
+                operands[i] = evalStack.Pop();
             }
 
-            double right = evalStack.Pop();
-            double left = evalStack.Pop();
-
-            switch (op)
-            {
-                case "+":
-                    evalStack.Push(left + right);
-                    break;
-                case "-":
-                    evalStack.Push(left - right);
-                    break;
-                case "*":
-                    evalStack.Push(left * right);
-                    break;
-                case "/":
-                    if (right == 0)
-                    {
-                        throw new DivideByZeroException("Division by zero!");
-                    }
-                    evalStack.Push(left / right);
-                    break;
-                case "%":
-                    if (right == 0)
-                    {
-                        throw new DivideByZeroException("Modulo by zero!");
-                    }
-                    evalStack.Push(left % right);
-                    break;
-                case "^":
-                    evalStack.Push(Math.Pow(left, right));
-                    break;
-                default:
-                    throw new FormatException($"Unknown operator '{op}'.");
-            }
+            evalStack.Push(op.Apply(operands));
         }
     }
 }
