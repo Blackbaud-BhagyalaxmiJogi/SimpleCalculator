@@ -2,13 +2,11 @@
 
 namespace SimpleCalculator.Logging
 {
-    // Responsible for recording evaluated expressions to a log file on disk,
-    // and reading/clearing that history on request.
-    public class HistoryLogger
+    public class HistoryRepository : IHistoryWriter, IHistoryReader, IHistoryManager
     {
         private readonly string logFilePath;
 
-        public HistoryLogger(string logFilePath)
+        public HistoryRepository(string logFilePath)
         {
             this.logFilePath = logFilePath;
         }
@@ -26,31 +24,20 @@ namespace SimpleCalculator.Logging
             }
         }
 
-        public void ShowHistory()
+        public bool HasHistory() => File.Exists(logFilePath);
+
+        public string[] ReadAll()
         {
-            Console.Clear();
-
-            if (!File.Exists(logFilePath))
-            {
-                Console.WriteLine("History empty.");
-                return;
-            }
-
-            string[] logEntries = File.ReadAllLines(logFilePath);
-            foreach (string entry in logEntries)
-            {
-                Console.WriteLine(entry);
-            }
+            return HasHistory() ? File.ReadAllLines(logFilePath) : Array.Empty<string>();
         }
 
-        public void ClearHistory()
+        public void Clear()
         {
             if (File.Exists(logFilePath))
             {
                 File.Delete(logFilePath);
             }
-
-            Console.WriteLine("History wiped cleanly.");
         }
+        
     }
 }

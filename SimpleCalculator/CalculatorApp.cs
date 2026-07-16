@@ -7,13 +7,18 @@ namespace SimpleCalculator
 {
     internal class CalculatorApp
     {
-        private readonly ExpressionCalculator calculator;
-        private readonly HistoryLogger historyLogger;
+        private readonly IExpressionCalculator calculator;
+        private readonly IHistoryWriter historyWriter;
+        private readonly IHistoryManager historyManager;
+        private readonly HistoryPresenter historyPresenter;
 
-        public CalculatorApp(ExpressionCalculator calculator, HistoryLogger historyLogger)
+        public CalculatorApp(IExpressionCalculator calculator, IHistoryWriter historyWriter,
+                              IHistoryManager historyManager, HistoryPresenter historyPresenter)
         {
             this.calculator = calculator;
-            this.historyLogger = historyLogger;
+            this.historyWriter = historyWriter;
+            this.historyManager = historyManager;
+            this.historyPresenter = historyPresenter;
         }
 
         public void Run()
@@ -50,10 +55,10 @@ namespace SimpleCalculator
                     EvaluateExpressionsFromFile();
                     return true;
                 case MenuOptions.MenuShowHistory:
-                    historyLogger.ShowHistory();
+                    historyPresenter.ShowHistory();
                     return true;
                 case MenuOptions.MenuClearHistory:
-                    historyLogger.ClearHistory();
+                    historyManager.Clear();
                     return true;
                 case MenuOptions.MenuExit:
                     return false;
@@ -164,7 +169,7 @@ namespace SimpleCalculator
             {
                 double result = calculator.Evaluate(trimmedExpression);
                 string entry = $"{trimmedExpression} = {result}";
-                historyLogger.Log(entry);
+                historyWriter.Log(entry);
                 return EvaluationOutcome.Succeeded(result, entry);
             }
             catch (FormatException ex)
