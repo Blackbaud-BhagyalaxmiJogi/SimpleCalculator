@@ -3,7 +3,7 @@ using SimpleCalculator.UI;
 
 namespace SimpleCalculator.Evaluation
 {
-    public class ConsoleExpressionRunner
+    public class ConsoleExpressionRunner : IExpressionRunner
     {
         private readonly ExpressionEvaluationService evaluationService;
 

@@ -8,16 +8,17 @@ namespace SimpleCalculator.Menu
 {
     public class MenuController
     {
-        private readonly ConsoleExpressionRunner consoleRunner;
-        private readonly BatchFileProcessor batchProcessor;
         private readonly HistoryPresenter historyPresenter;
         private readonly IHistoryManager historyManager;
-
+        private readonly Dictionary<string, IExpressionRunner> expressionRunners;
         public MenuController(ConsoleExpressionRunner consoleRunner, BatchFileProcessor batchProcessor,
                                HistoryPresenter historyPresenter, IHistoryManager historyManager)
         {
-            this.consoleRunner = consoleRunner;
-            this.batchProcessor = batchProcessor;
+            expressionRunners = new Dictionary<string, IExpressionRunner>
+            {
+                { MenuOptions.MenuEvaluateManually, consoleRunner },
+                { MenuOptions.MenuEvaluateFromFile, batchProcessor }
+            };
             this.historyPresenter = historyPresenter;
             this.historyManager = historyManager;
         }
@@ -36,14 +37,14 @@ namespace SimpleCalculator.Menu
 
         private bool HandleMenuChoice(string choice)
         {
+            if (expressionRunners.TryGetValue(choice, out IExpressionRunner runner))
+            {
+                runner.Run();
+                return true;
+            }
+
             switch (choice)
             {
-                case MenuOptions.MenuEvaluateManually:
-                    consoleRunner.Run();
-                    return true;
-                case MenuOptions.MenuEvaluateFromFile:
-                    batchProcessor.Run();
-                    return true;
                 case MenuOptions.MenuShowHistory:
                     historyPresenter.ShowHistory();
                     return true;

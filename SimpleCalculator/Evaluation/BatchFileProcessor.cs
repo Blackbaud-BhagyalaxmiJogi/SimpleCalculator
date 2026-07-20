@@ -3,7 +3,7 @@ using SimpleCalculator.UI;
 
 namespace SimpleCalculator.Evaluation
 {
-    public class BatchFileProcessor
+    public class BatchFileProcessor : IExpressionRunner
     {
         private readonly ExpressionEvaluationService evaluationService;
         private const int SeparatorWidth = 40;
