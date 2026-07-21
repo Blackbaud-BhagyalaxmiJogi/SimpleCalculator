@@ -8,19 +8,17 @@ namespace SimpleCalculator.Menu
 {
     public class MenuController
     {
-        private readonly HistoryPresenter historyPresenter;
-        private readonly IHistoryManager historyManager;
-        private readonly Dictionary<string, IExpressionRunner> expressionRunners;
-        public MenuController(ConsoleExpressionRunner consoleRunner, BatchFileProcessor batchProcessor,
-                               HistoryPresenter historyPresenter, IHistoryManager historyManager)
+        private readonly Dictionary<string, IMenuCommand> commands;
+        public MenuController(EvaluateManuallyCommand evaluateManually, EvaluateFromFileCommand evaluateFromFile, ShowHistoryCommand showHistory, ClearHistoryCommand clearHistory, ExitCommand exit)
         {
-            expressionRunners = new Dictionary<string, IExpressionRunner>
+            commands = new Dictionary<string, IMenuCommand>
             {
-                { MenuOptions.MenuEvaluateManually, consoleRunner },
-                { MenuOptions.MenuEvaluateFromFile, batchProcessor }
+                {MenuOptions.MenuEvaluateManually, evaluateManually},
+                {MenuOptions.MenuEvaluateFromFile, evaluateFromFile},
+                {MenuOptions.MenuShowHistory, showHistory},
+                {MenuOptions.MenuClearHistory, clearHistory},
+                {MenuOptions.MenuExit, exit}
             };
-            this.historyPresenter = historyPresenter;
-            this.historyManager = historyManager;
         }
 
         public void RunMenuLoop()
@@ -37,26 +35,15 @@ namespace SimpleCalculator.Menu
 
         private bool HandleMenuChoice(string choice)
         {
-            if (expressionRunners.TryGetValue(choice, out IExpressionRunner runner))
+            if (commands.TryGetValue(choice, out IMenuCommand command))
             {
-                runner.Run();
-                return true;
+                return command.Execute();
             }
 
-            switch (choice)
-            {
-                case MenuOptions.MenuShowHistory:
-                    historyPresenter.ShowHistory();
-                    return true;
-                case MenuOptions.MenuClearHistory:
-                    historyManager.Clear();
-                    return true;
-                case MenuOptions.MenuExit:
-                    return false;
-                default:
-                    ConsoleHelper.WriteError("Invalid selection.");
-                    return true;
-            }
+            ConsoleHelper.WriteError("Invalid selection.");
+            return true;
+
+
         }
 
         private void DisplayMenu()

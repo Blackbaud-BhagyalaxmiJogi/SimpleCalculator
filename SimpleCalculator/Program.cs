@@ -23,7 +23,12 @@ namespace SimpleCalculator
         {
             var services = new ServiceCollection();
 
-        
+            // these services are stateless, so one shared instance per
+            // app run is both safe and avoids needless reallocation.
+            // Using AddSingleton instead of AddTransient avoids constructing
+            // a brand-new Tokenizer/ShuntingYardConverter/PostfixEvaluator (and so
+            // on) on every single menu action, which would be wasted allocation
+            // for objects that behave identical every time.
             services.AddSingleton<Tokenizer>();
             services.AddSingleton<ShuntingYardConverter>();
             services.AddSingleton<PostfixEvaluator>();
@@ -43,9 +48,16 @@ namespace SimpleCalculator
             services.AddSingleton<MenuController>();
             services.AddSingleton<CalculatorApp>();
 
+            services.AddSingleton<EvaluateManuallyCommand>();
+            services.AddSingleton<EvaluateFromFileCommand>();
+            services.AddSingleton<ShowHistoryCommand>();
+            services.AddSingleton<ClearHistoryCommand>();
+            services.AddSingleton<ExitCommand>();
+
             return services.BuildServiceProvider();
         }
 
 
     }
 }
+
