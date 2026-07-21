@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace SimpleCalculator
+namespace SimpleCalculator.RawCode
 {
     public class SingleFileCalci
     {
@@ -196,7 +196,7 @@ namespace SimpleCalculator
                 {
                     while (operatorStack.Count > 0 && operatorStack.Peek() != "(" &&
                            (precedence[operatorStack.Peek()] > precedence[token] ||
-                           (precedence[operatorStack.Peek()] == precedence[token] && token != "^")))
+                           precedence[operatorStack.Peek()] == precedence[token] && token != "^"))
                     {
                         outputQueue.Enqueue(operatorStack.Pop());
                     }
