@@ -1,6 +1,7 @@
 ﻿
 
 using SimpleCalculator.Logging;
+using SimpleCalculator.UI;
 
 namespace SimpleCalculator.Menu
 {
@@ -16,6 +17,7 @@ namespace SimpleCalculator.Menu
         public bool Execute()
         {
             historyManager.Clear();
+            ConsoleHelper.WriteSuccess("History cleared successfully.");
             return true;
         }
     }

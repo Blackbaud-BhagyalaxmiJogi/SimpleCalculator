@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using SimpleCalculator.UI;
+using System.IO;
 
 namespace SimpleCalculator.Logging
 {
