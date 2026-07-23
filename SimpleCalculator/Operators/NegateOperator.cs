@@ -2,7 +2,7 @@
 {
     public class NegateOperator : Operator
     {
-        public override string Symbol => "neg";
+        public override string Symbol => "#";
         public override int Precedence => 4;
         public override bool IsRightAssociative => true;
         public override int OperandCount => 1;
